@@ -1,4 +1,4 @@
-import 'dart:js';
+
 
 import 'package:flutter/material.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
@@ -13,13 +13,10 @@ int Count_H=0;
 int Count_B=0;
 int Count_D=0;
 int Count_G=0;
-double coli_haut=0;
-double coli_bas=0;
-double coli_gauche=0;
-double coli_droite=0;
+String saved_count="H";
 var init=false;
 double joy_x=0;
-var direction =' ';
+var direction='null';
 double perso_x=0;
 double perso_y=0;
 double joy_y=0;
@@ -46,7 +43,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Affichage de sprites'),
+      home: const MyHomePage(title: 'Sokoban'),
     );
   }
 }
@@ -81,25 +78,30 @@ class _MyHomePageState extends State<MyHomePage>
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+
           children: [
-            ElevatedButton(
-              child: Text('NEW GAME'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Game()),
-                );
-              },
+            Padding(
+              padding: EdgeInsets.all(5),
+              child:ElevatedButton(
+                child: Text('NEW GAME'),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => Game()),
+                  );
+                },
+              ),
             ),
-            ElevatedButton(
-              child: Text('QUIt'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Game()),
-                );
-              },
-            ),
+
+            Padding(
+              padding: EdgeInsets.all(5),
+              child:ElevatedButton(
+                child: Text('QUIt'),
+                onPressed: () {
+                  SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+                },
+              ),
+            )
 
           ],
         ),
@@ -138,8 +140,7 @@ class Joystick_W_State extends State<Joystick_W>
                   setState(() {
                     joy_x =  details.x;
                     joy_y = details.y;
-                    print(joy_x);
-                    print(joy_y);
+
                     if( joy_y>0.80){
                       direction='haut';
                       print(direction);
@@ -244,7 +245,6 @@ class Game extends StatelessWidget{
 
                     title: Text('levels: ${(index+1).toString()}'),
 
-                    subtitle: Text('hauteur: ${data[index]['largeur'].toString()}'),
                     onTap: () {
                       level_selected=index;
 
@@ -349,11 +349,7 @@ class MyPainter extends CustomPainter {
       print('False');
       return false;
     }
-    else if(data[level_selected]["lignes"][o][p]=='.')
-    {
-      print('False');
-      return false;
-    }
+
     else if(data[level_selected]["lignes"][o][p]=="\$")
     {
       print('False');
@@ -369,58 +365,78 @@ class MyPainter extends CustomPainter {
     }
     return false;
   }
+  @override
 
-  bool Colision(direction) {
+  @override
+  int Detect_Play_Object_Collision(Canvas canvas,o,p)
+  {
+
     for (int i = 0; i < data[level_selected]["largeur"].toInt(); i++) {
       if (i < data[level_selected]["hauteur"].toInt()) {
         for (int y = 0; y < data[level_selected]["lignes"][i].length; y++) {
-          switch (direction)
+          if(data[level_selected]["lignes"][i][y] == "@")
           {
-            case 'haut':
-              if (data[level_selected]["lignes"][i][y] == "@" && data[level_selected]["lignes"][i+1][y] == "\$" && data[level_selected]["lignes"][i+1][y] == " ") {
-                print('Colision haut');
-                return true;
-              }
-              break;
-            case 'bas':
-              if (data[level_selected]["lignes"][i][y] == "@" && data[level_selected]["lignes"][i-1][y] == "\$" && data[level_selected]["lignes"][i-1][y] == " ") {
-                print('Colision bas');
-                return true;
-              }
-              break;
-            case 'droite':
-              if (data[level_selected]["lignes"][i][y] == "@" && data[level_selected]["lignes"][i][y+1] == "\$" && data[level_selected]["lignes"][i][y+1] == " ") {
-                print('Colision droite');
-                return true;
-              }break;
-            case 'gauche':
-              if (data[level_selected]["lignes"][i][y] == "@" && data[level_selected]["lignes"][i][y-1] == "\$" && data[level_selected]["lignes"][i][y-1] == " ") {
-                print('Colision gauche');
-                return true;
-              }
-          }
-          }
 
+            if(direction == 'droite' )
+            {
+              print("ok");
+              if(y+1< data[level_selected]["lignes"][i].length && y+2 < data[level_selected]["lignes"][i].length) {
+                if (data[level_selected]["lignes"][i][y + 1] == "\$" &&
+                    data[level_selected]["lignes"][i][y + 2]) {
+                  data[level_selected]["lignes"][perso_x] =
+                      data[level_selected]["lignes"][perso_x].replaceAll(
+                          "@", " ");
+                  List<String> table = data[level_selected]["lignes"][o]
+                      .split('');
+                  table[p] = "@";
+                  table[p+1]="\$";
+                  data[level_selected]["lignes"][o] = table.join('');
+                  Rect srcRect = Rect.fromLTWH(0, 0, 128, 128);
+                  Rect destRect2 = Rect.fromLTWH(
+                      p * 50, o * 50, 50, 50);
+                  canvas.drawImageRect(
+                      animationR[Count_D]!, srcRect, destRect2, Paint());
+                  return 1;
+                }
+              }
+            }
+            else if(direction == 'gauche' )
+            {
+              if(data[level_selected]["lignes"][i][y-1] == "\$")
+              {
+                return -1;
+              }
+            }
+            else if(direction == 'haut' )
+            {
+              if(data[level_selected]["lignes"][i][y+1] == "\$")
+              {
+                return 1;
+              }
+            }
+            else if(direction == 'bas' )
+            {
+              if(data[level_selected]["lignes"][i][y+1] == "\$")
+              {
+                return -1;
+              }
+            }
+          }
         }
       }
-    return false;
     }
 
+    return 0;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    //Si les ressources ne sont pas prêtes, ou qu'il y a un problème, on sort de la fonction
-    //if ((!ressources.prepared) || (ressources.player_haut == null) ||(ressources.caisse == null) || (ressources.player_haut == null))return;
 
-    //On dessine 2 sprites  aux coins de l'écran
+
+
+
     Rect srcRect = Rect.fromLTWH(0, 0, 128, 128);
-    //On prend tout le sprites (128x128 pixels)
 
-    //On affichera le premier sprite en haut à gauche, dans un carré de 50x50 pixels
-
-
-    //On affichera le deuxième sprite en bas à droite, dans un carré de 50x50 pixels
-    //On affichera un carré bleu en plein milieu de l'écran
     for (int i = 0; i < data[level_selected]["largeur"].toInt(); i++) {
       if (i < data[level_selected]["hauteur"].toInt()) {
         for (int y = 0; y < data[level_selected]["lignes"][i].length; y++) {
@@ -462,13 +478,13 @@ class MyPainter extends CustomPainter {
         double u = perso_x;
         double y = perso_y;
         if (data[level_selected]["lignes"][perso_x][perso_y] == "@") {
-          //data[level_selected]["lignes"][i][y] = " ";
+
           if (perso_x + 1 < data[level_selected]["largeur"].toInt()) {
 
             double j= perso_x + 1;
 
 
-            //Rect destRect3 = Rect.fromLTWH(y * 50, i * 50, 50, 50);
+
 
 
             if(updateTableau(j, perso_y, '@',u,y)==true) {
@@ -481,10 +497,7 @@ class MyPainter extends CustomPainter {
               canvas.drawImageRect(
                   animationH[Count_H]!, srcRect, destRect2, Paint());
               Count_H+=1;
-              if(Count_H >2)
-              {
-                Count_H=0;
-              }
+              saved_count='H';
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -501,15 +514,16 @@ class MyPainter extends CustomPainter {
                 }
               }
             }
-            else
+            else if(updateTableau(j, perso_y, "\$",u,y)==true)
             {
               Rect destRect2 = Rect.fromLTWH(
                   y * 50, u * 50, 50, 50);
-
               canvas.drawImageRect(
                   ressources.sol!, srcRect, destRect2, Paint());
               canvas.drawImageRect(
                   animationH[Count_H]!, srcRect, destRect2, Paint());
+              saved_count='H';
+
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -525,6 +539,10 @@ class MyPainter extends CustomPainter {
                   }
                 }
               }
+            }
+            if(Count_H >2)
+            {
+              Count_H=0;
             }
 
           }
@@ -538,6 +556,7 @@ class MyPainter extends CustomPainter {
               ressources.sol!, srcRect, destRect2, Paint());
           canvas.drawImageRect(
               animationH[Count_H]!, srcRect, destRect2, Paint());
+          saved_count='H';
           for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
           {
             if(i <data[level_selected]["hauteur"].toInt()) {
@@ -564,17 +583,11 @@ class MyPainter extends CustomPainter {
         double u = perso_x;
         double y = perso_y;
         if (data[level_selected]["lignes"][perso_x][perso_y] == "@") {
-          //data[level_selected]["lignes"][i][y] = " ";
+
           if (perso_x - 1 >0) {
 
             double j=perso_x - 1;
 
-            //updateTableau(perso_x+1, perso_y, ' ');
-            //Rect destRect3 = Rect.fromLTWH(y * 50, i * 50, 50, 50);
-            //Rect destRect2 = Rect.fromLTWH(y * 50, (i-1) * 50, 50, 50);
-
-            //canvas.drawImageRect(ressources.player_haut!, srcRect, destRect2, Paint());
-            //canvas.drawImageRect(ressources.vide!, srcRect, destRect3, Paint());
 
             if(updateTableau(j, perso_y, '@',u,y)==true) {
               perso_x-=1;
@@ -586,10 +599,7 @@ class MyPainter extends CustomPainter {
               canvas.drawImageRect(
                   animationB[Count_B]!, srcRect, destRect2, Paint());
               Count_B+=1;
-              if(Count_B > 2)
-              {
-                Count_B=0;
-              }
+              saved_count="B";
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -615,6 +625,7 @@ class MyPainter extends CustomPainter {
                   ressources.sol!, srcRect, destRect2, Paint());
               canvas.drawImageRect(
                   animationB[Count_B]!, srcRect, destRect2, Paint());
+              saved_count="B";
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -631,7 +642,10 @@ class MyPainter extends CustomPainter {
                 }
               }
             }
-
+            if(Count_B > 2)
+            {
+              Count_B=0;
+            }
           }
         }
         else
@@ -643,6 +657,7 @@ class MyPainter extends CustomPainter {
               ressources.sol!, srcRect, destRect2, Paint());
           canvas.drawImageRect(
               animationB[Count_B]!, srcRect, destRect2, Paint());
+          saved_count="B";
           for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
           {
             if(i <data[level_selected]["hauteur"].toInt()) {
@@ -672,10 +687,6 @@ class MyPainter extends CustomPainter {
               data[level_selected]["lignes"][perso_x].length) {
 
             double j= perso_y + 1;
-            //updateTableau(perso_x, perso_y-1, ' ');
-            //Rect destRect2 = Rect.fromLTWH((y+1) * 50, i * 50, 50, 50);
-
-            //canvas.drawImageRect(ressources.player_haut!, srcRect, destRect2, Paint());
 
             if (updateTableau(perso_x, j, '@', u, y) == true) {
               perso_y+=1;
@@ -687,10 +698,7 @@ class MyPainter extends CustomPainter {
               canvas.drawImageRect(
                   animationR[Count_D]!, srcRect, destRect2, Paint());
               Count_D+=1;
-              if(Count_D > 2)
-              {
-                Count_D=0;
-              }
+              saved_count="D";
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -716,6 +724,8 @@ class MyPainter extends CustomPainter {
                   ressources.sol!, srcRect, destRect2, Paint());
               canvas.drawImageRect(
                   animationR[Count_D]!, srcRect, destRect2, Paint());
+              saved_count="D";
+              print(Detect_Play_Object_Collision(canvas,perso_x ,j ));
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -730,6 +740,10 @@ class MyPainter extends CustomPainter {
                 }
               }
             }
+            if(Count_D > 2)
+            {
+              Count_D=0;
+            }
           }
 
         }
@@ -742,6 +756,7 @@ class MyPainter extends CustomPainter {
 
           canvas.drawImageRect(
               animationR[Count_D]!, srcRect, destRect2, Paint());
+          saved_count="D";
           for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
           {
             if(i <data[level_selected]["hauteur"].toInt()) {
@@ -781,10 +796,7 @@ class MyPainter extends CustomPainter {
               canvas.drawImageRect(
                   animationG[Count_G]!, srcRect, destRect2, Paint());
               Count_G+=1;
-              if(Count_G > 2)
-              {
-                Count_G=0;
-              }
+              saved_count="G";
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -805,11 +817,12 @@ class MyPainter extends CustomPainter {
             {
               Rect destRect2 = Rect.fromLTWH(
                   y * 50, u * 50, 50, 50);
-
               canvas.drawImageRect(
                   ressources.sol!, srcRect, destRect2, Paint());
               canvas.drawImageRect(
                   animationG[Count_G]!, srcRect, destRect2, Paint());
+              saved_count="G";
+
               for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
               {
                 if(i <data[level_selected]["hauteur"].toInt()) {
@@ -825,9 +838,42 @@ class MyPainter extends CustomPainter {
               }
 
             }
+            if(Count_G > 2)
+            {
+              Count_G=0;
+            }
 
           }
         }
+        else
+        {
+          Rect destRect2 = Rect.fromLTWH(
+              y * 50, u * 50, 50, 50);
+          canvas.drawImageRect(
+              ressources.sol!, srcRect, destRect2, Paint());
+          canvas.drawImageRect(
+              animationG[Count_G]!, srcRect, destRect2, Paint());
+          saved_count="G";
+
+          for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
+          {
+            if(i <data[level_selected]["hauteur"].toInt()) {
+              for(int j=0;j<data[level_selected]["lignes"][i].length;j++) {
+                if (data[level_selected]["lignes"][i][j] == " ") {
+                  destRect2 = Rect.fromLTWH(
+                      j * 50, i * 50, 50, 50);
+                  canvas.drawImageRect(
+                      ressources.sol!, srcRect, destRect2, Paint());
+                }
+              }
+            }
+          }
+        }
+        if(Count_G > 2)
+        {
+          Count_G=0;
+        }
+
 
 
 
@@ -838,9 +884,26 @@ class MyPainter extends CustomPainter {
 
         canvas.drawImageRect(
             ressources.sol!, srcRect, destRect2, Paint());
-        canvas.drawImageRect(
-            animationG[Count_G]!, srcRect, destRect2, Paint());
+        switch(saved_count)
+        {
+          case "H":
+            canvas.drawImageRect(
+                animationH[Count_H]!, srcRect, destRect2, Paint());
+            break;
+          case "B":
+            canvas.drawImageRect(
+                animationB[Count_B]!, srcRect, destRect2, Paint());
+            break;
+          case "D":
+            canvas.drawImageRect(
+                animationR[Count_D]!, srcRect, destRect2, Paint());
+            break;
+          case "G":
+            canvas.drawImageRect(
+                animationG[Count_G]!, srcRect, destRect2, Paint());
 
+
+        }
         for(int i=0;i< data[level_selected]["largeur"].toInt();i++)
         {
           if(i <data[level_selected]["hauteur"].toInt()) {
@@ -856,7 +919,22 @@ class MyPainter extends CustomPainter {
             }
           }
         }
-
+        if(Count_G > 2)
+        {
+          Count_G=0;
+        }
+        if(Count_D > 2)
+        {
+          Count_D=0;
+        }
+        if(Count_H > 2)
+        {
+          Count_H=0;
+        }
+        if(Count_B > 2)
+        {
+          Count_B=0;
+        }
 
 
     }
@@ -937,7 +1015,28 @@ class GameScreen extends StatelessWidget {
     double largeur = MediaQuery.of(context).size.width ;
     return Scaffold(
         appBar: AppBar(
-          title: Text("GameStarting"),
+            title: Text("GameStarting"),
+            leading:PopupMenuButton(
+              icon:Icon(Icons.menu),
+              itemBuilder: (context){
+                return [
+                  PopupMenuItem<int>(value:0,child: Text("Pause")),PopupMenuItem(value:1,child: Text("Quitter"))
+                ];
+              },
+              onSelected: (value)
+              {
+                if(value ==0)
+                {
+                  Navigator.push(context,MaterialPageRoute(builder: (context)=>Game()));
+                  init=false;
+                }
+                else if(value ==1)
+                {
+                  Navigator.push(context,MaterialPageRoute(builder: (context)=>MyHomePage(title:"Menu" )));
+                  init=false;
+                }
+              },
+            )
         ),
         resizeToAvoidBottomInset: true,
         body:ListView(
